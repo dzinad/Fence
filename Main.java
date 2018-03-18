@@ -4,7 +4,7 @@ import java.io.FileWriter;
 import java.io.IOException;
 import java.util.Comparator;
 import java.util.Iterator;
-import java.util.PriorityQueue;
+import java.util.Random;
 import java.util.Scanner;
 import java.util.Set;
 import java.util.TreeSet;
@@ -15,11 +15,12 @@ public class Main {
 
     private static final String INPUT_FILE_NAME = "fence.in";
     private static final String OUTPUT_FILE_NAME = "fence.out";
-    private static int[][] full = new int[1000000][2];
     private static StringBuffer sb;
-    private static int length = 0;
     private static Set<Integer[]> pairs;
     private static Comparator<Integer[]> comp;
+    /*private static int[] test = new int[1000000];
+    private static int length = 0;
+    private static int index;*/
     
 	public static void main(String[] args) {
 		comp = new Comparator<Integer[]>() {
@@ -30,15 +31,45 @@ public class Main {
 			}
 			
 		};
+		/*for (int i = 0; i < 50; i++) {
+			index = i + 1;
+			generateRandomData();
+			readData();			
+		}*/
 		readData();
+		//System.out.println("end of tests");
 		outputData();
 	}
+	
+	/*private static void generateRandomData() {
+		Random rand = new Random();
+		int num = rand.nextInt(100) + 1;
+        BufferedWriter writer;
+        try {
+            writer = new BufferedWriter(new FileWriter("test" + index + ".txt"));
+            int a, b;
+            for (int i = 0; i < num; i++) {
+            	a = rand.nextInt(150) + 1;
+            	b = a + rand.nextInt(70) + 1;
+                writer.append("L " + a + " " + b + "\n");
+            	a = rand.nextInt(150) + 1;
+            	b = a + rand.nextInt(70) + 1;
+                writer.append("W " + a + " " + b + "\n");
+            }
+            writer.append("F");
+            writer.close();
+        }
+        catch (IOException e) {}
+	}*/
 
 	
     private static void readData() {
     	pairs = new TreeSet<>(comp);
     	sb = new StringBuffer();
         Scanner scanner = null;
+        /*for (int i = 0; i < 1000000; i++) {
+        	test[i] = 0;
+        }*/
         try {
             scanner = new Scanner(new File(INPUT_FILE_NAME));
             char command;
@@ -74,8 +105,12 @@ public class Main {
     }
     
     private static void fill(int a, int b) {
-    	System.out.println("fill " + a + " - " + b);
-    	int i = 0;
+    	/*if (b > length) {
+    		length = b;
+    	}
+    	for (int i = a - 1; i < b; i++) {
+    		test[i] = 1;
+    	}*/
     	Integer[] curPair;
     	Iterator<Integer[]> iter = pairs.iterator();
     	int start = 0, end = 0;
@@ -97,40 +132,119 @@ public class Main {
     	}
     	final int finalStart = start;
     	final int finalEnd = end;
+    	//System.out.println(start + " " + end);
     	if (start != 0 && end != 0) {
-        	pairs.removeIf(x -> x[0] >= finalStart || (finalEnd == 0 ||  x[1] <= finalEnd));    		
+        	pairs.removeIf(x -> (x[0] >= finalStart && x[1] <= finalEnd));    		
     	}
     	pairs.add(new Integer[]{newStart, newEnd});
+    	//check();
     	//print();
+    	//System.out.println("================");
+    }
+    
+    /*private static void check() {
+    	Iterator<Integer[]> iter = pairs.iterator();
+    	while (iter.hasNext()) {
+    		Integer[] curPair = iter.next();
+    		for (int i = curPair[0] - 1; i < curPair[1]; i++) {
+    			if (test[i] == 0) {
+    				System.out.println("ASSERTION ERROR EXTRA FULL");
+    				print();
+    				break;
+    			}
+    			else {
+    				test[i] = -1;
+    			}
+    		}
+    	}
+    	for (int i = 0; i < length; i++) {
+    		if (test[i] == 1) {
+				System.out.println("ASSERTION ERROR SKIPPED FULL");
+				print();
+				break;    			
+    		}
+    	}
+    	
+    	for (int i = 0; i < length; i++) {
+    		if (test[i] == -1) {
+    			test[i] = 1;
+    		}
+    	}
     }
     
     private static void print() {
+    	System.out.println("index: " + index);
     	Iterator<Integer[]> iter = pairs.iterator();
     	while (iter.hasNext()) {
     		Integer[] curPair = iter.next();
     		System.out.println(curPair[0] + " - " + curPair[1]);
     	}
-    }
+    	System.out.println("======================");
+    }*/
     
     private static void find(int a, int b) {
-    	/*System.out.println(a + " - " + b);
-    	for (int i = a - 1; i <= b - 1; i++) {
-    		System.out.print(cells[i] + " ");
-    	}
-    	System.out.println("");
+		Integer[] curPair;
     	int bestFull = 0;
     	int bestEmpty = 0;
     	int curFull = 0;
     	int curEmpty = 0;
-    	if (cells[a - 1] == 0) {
+    	boolean someFullCellsProcessed = false;
+    	Iterator<Integer[]> iter = pairs.iterator();    
+    	Integer[] prevPair = new Integer[]{a, a};
+    	while (iter.hasNext()) {
+    		curPair = iter.next();
+    		if (curPair[1] < a) {
+    			continue;
+    		}
+    		if (curPair[0] > b) {
+    			break;
+    		}
+    		curFull = Math.min(b, curPair[1]) - Math.max(curPair[0], a) + 1;
+    		curEmpty = Math.max(curPair[0], a) - prevPair[1] - 1;
+    		if (!someFullCellsProcessed) {
+    			curEmpty++;
+    		}
+    		prevPair = curPair;
+    		if (bestFull < curFull) {
+    			bestFull = curFull;
+    		}
+    		if (bestEmpty < curEmpty) {
+    			bestEmpty = curEmpty;
+    		}
+    		someFullCellsProcessed = true;
+    	}
+		curEmpty = b - prevPair[1];
+		if (!someFullCellsProcessed) {
+			curEmpty++;
+		}
+		if (curEmpty > bestEmpty) {
+			bestEmpty = curEmpty;
+		}
+		/*int[] expected = findTest(a, b);
+		if (bestFull != expected[0] || bestEmpty != expected[1]) {
+			System.out.println("ASSERTION ERROR FOUND WRONG");
+			System.out.println("W " + a + " " + b);
+			System.out.println("actual: "+ bestFull + " - " + bestEmpty + ", expected: " + expected[0] + " - " + expected[1]);
+			print();			
+		}*/
+    	//print();
+    	sb.append(bestEmpty + " " + bestFull + "\n");
+    }
+    
+    /*private static int[] findTest(int a, int b) {
+    	int bestFull = 0;
+    	int bestEmpty = 0;
+    	int curFull = 0;
+    	int curEmpty = 0;
+    	if (test[a - 1] == 0) {
     		curEmpty = 1;
     	}
     	else {
     		curFull = 1;
     	}
     	for (int i = a; i <= b - 1; i++) {
-    		if (cells[i] == cells[i - 1]) {
-    			if (cells[i] == 0) {
+    		if (test[i] == test[i - 1]) {
+    			if (test[i] == 0) {
     				curEmpty++;
     			}
     			else {
@@ -138,7 +252,7 @@ public class Main {
     			}
     		}
     		else {
-    			if (cells[i - 1] == 0) {
+    			if (test[i - 1] == 0) {
     				if (bestEmpty < curEmpty) {
     					bestEmpty = curEmpty;
     				}
@@ -159,7 +273,7 @@ public class Main {
 		}
 		if (bestEmpty < curEmpty) {
 			bestEmpty = curEmpty;
-		}    	
-    	sb.append(bestEmpty + " " + bestFull + "\n");*/
-    }
+		}   
+		return new int[]{bestFull, bestEmpty};
+    }*/
 }
