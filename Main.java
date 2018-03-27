@@ -20,12 +20,17 @@ class Tree {
 			this.leftCellsUsed = 0;
 			this.rightCellsUsed = 0;
 			this.maxEmpty = end - start + 1;
+			this.leftCellsEmpty = end - start + 1;
+			this.rightCellsEmpty = end - start + 1;
 		}		
 		
-		public void fill(int mf, int l, int r) {
+		public void fill(int mf, int lf, int rf, int me, int le, int re) {
 			maxFull = mf;
-			leftCellsUsed = l;
-			rightCellsUsed = r;
+			leftCellsUsed = lf;
+			rightCellsUsed = rf;
+			maxEmpty = me;
+			leftCellsEmpty = le;
+			rightCellsEmpty = re;
 		}
 		
 		@Override
@@ -41,10 +46,8 @@ class Tree {
 	
 	private Node[] data;
 	//private final int N = 1048576; //так удобнее
-	private final int N = 8;
+	private final int N = 32;
 	private final int length = 2 * N;
-	private int curFull = 0, bestFull = 0;
-	private int curEmpty = 0, bestEmpty = 0;
 	
 	
 	public Tree() {
@@ -66,28 +69,42 @@ class Tree {
 		int start = N + a - 1;
 		int end = N + b - 1;
 		for (int i = start; i <= end; i++) {
-			data[i].fill(1, 1, 1);
+			data[i].fill(1, 1, 1, 0, 0, 0);
 		}
 		start /= 2;
 		end /= 2;
 		
-		int mf, l, r;
+		int mf, lf, rf, me, le, re;
 		Node leftChild, rightChild;
 		
 		while (start > 0 && end > 0) {
 			for (int i = start; i <= end; i++) {
 				leftChild = data[2 * i];
 				rightChild = data[2 * i + 1];
+				
+				//full
 				mf = Math.max(Math.max(leftChild.maxFull, rightChild.maxFull),  leftChild.rightCellsUsed + rightChild.leftCellsUsed);
-				l = leftChild.leftCellsUsed;
-				r = rightChild.rightCellsUsed;
+				lf = leftChild.leftCellsUsed;
+				rf = rightChild.rightCellsUsed;
 				if (leftChild.leftCellsUsed == leftChild.end - leftChild.start + 1) {
-					l += rightChild.leftCellsUsed;
+					lf += rightChild.leftCellsUsed;
 				}
 				if (rightChild.rightCellsUsed == rightChild.end - rightChild.start + 1) {
-					r += leftChild.rightCellsUsed;
+					rf += leftChild.rightCellsUsed;
 				}
-				data[i].fill(mf, l, r);
+
+				//empty
+				me = Math.max(Math.max(leftChild.maxEmpty, rightChild.maxEmpty),  leftChild.rightCellsEmpty + rightChild.leftCellsEmpty);
+				le = leftChild.leftCellsEmpty;
+				re = rightChild.rightCellsEmpty;
+				if (leftChild.leftCellsEmpty == leftChild.end - leftChild.start + 1) {
+					le += rightChild.leftCellsEmpty;
+				}
+				if (rightChild.rightCellsEmpty == rightChild.end - rightChild.start + 1) {
+					re += leftChild.rightCellsEmpty;
+				}
+
+				data[i].fill(mf, lf, rf, me, le, re);
 			}
 			start /= 2;
 			end /= 2;
@@ -98,19 +115,18 @@ class Tree {
 		
 	public int[] findFullAndEmpty(int a, int b) {
 		//System.out.println("W " + a + " " + b);
-		curFull = 0;
-		bestFull = 0;
-		curEmpty = 0;
-		bestEmpty = 0;
-		bestFull = findHelper(a, b, 1)[0];
-		return new int[]{bestEmpty, bestFull};
+		int[] res = findHelper(a, b, 1);
+		return new int[]{res[3], res[0]};
 	}
 	
 	private int[] findHelper(int a, int b, int index) {
 		//System.out.println("find [" + a + "; " + b + "] in [" + data[index].start + "; " + data[index].end + "]");
 		//здесь на входе [a; b] содержится в [data[index].start; data[index].end]
 		if (a == data[index].start && b == data[index].end) {
-			return new int[]{data[index].maxFull, data[index].leftCellsUsed, data[index].rightCellsUsed};
+			return new int[]{
+					data[index].maxFull, data[index].leftCellsUsed, data[index].rightCellsUsed,
+					data[index].maxEmpty, data[index].leftCellsEmpty, data[index].rightCellsEmpty
+					};
 		}
 		int middle = (data[index].start + data[index].end) / 2;
 		if (b <= middle) {
@@ -123,19 +139,31 @@ class Tree {
 		//надо разбить отрезок
 		int[] left = findHelper(a, middle, 2 * index);
 		int[] right = findHelper(middle + 1, b, 2 * index + 1);
-		int mf, l, r;
+		int mf, lf, rf, me, le, re;
 		
+		//full
 		mf = Math.max(Math.max(left[0], right[0]), left[2] + right[1]);
-		l = left[1];
-		r = right[2];
-		if (l == middle - a + 1) {
-			l += right[1];
+		lf = left[1];
+		rf = right[2];
+		if (lf == middle - a + 1) {
+			lf += right[1];
 		}
-		if (r == b - middle) {
-			r += left[2];
+		if (rf == b - middle) {
+			rf += left[2];
 		}
 		
-		return new int[]{mf, l, r};
+		//empty
+		me = Math.max(Math.max(left[3], right[3]), left[5] + right[4]);
+		le = left[4];
+		re = right[5];
+		if (le == middle - a + 1) {
+			le += right[4];
+		}
+		if (re == b - middle) {
+			re += left[5];
+		}
+		
+		return new int[]{mf, lf, rf, me, le, re};
 	}
 
 	public void debugPrint() {
@@ -162,7 +190,6 @@ public class Main {
     private static StringBuffer sb;
     private static Tree segments;
     private static int[] test = new int[1000000];
-    private static int length = 0;
     private static int index;
     
 	public static void main(String[] args) {
